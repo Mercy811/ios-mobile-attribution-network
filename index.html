@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An interactive map of the components, signals, and data flows in iOS mobile attribution.">
+  <meta name="theme-color" content="#f7f7f5">
+  <title>iOS Mobile Attribution Network — Interactive Map</title>
+  <style>
+    :root {
+      --background:#f7f7f5; --foreground:#181a1c; --card:#fff; --muted-foreground:#686d72;
+      --border:#cfd3d6; --primary:#2787d8; --primary-foreground:#fff; --accent:#e8f3fd;
+      --viz-series-1:#479fe8; --viz-series-2:#e69652; --viz-series-3:#70bd87;
+      --viz-series-4:#d779a7; --viz-series-5:#8b78cf;
+      --font-sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    *{box-sizing:border-box}
+    html{background:var(--background);color:var(--foreground);font-family:var(--font-sans)}
+    body{margin:0;padding:24px;min-width:320px}
+    main{width:min(1400px,100%);margin:0 auto}
+    h2,h3,p{margin-block-start:0}
+    h2{font-size:24px;line-height:1.2;margin-bottom:4px}
+    h3{font-size:18px;margin-bottom:6px}
+    button{font:inherit}
+    .btn{padding:9px 10px;border:1px solid var(--border);border-radius:9px;background:var(--card);color:var(--foreground);cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
+    .btn:hover,.btn:focus-visible{border-color:#777;box-shadow:0 3px 14px #00000012;transform:translateY(-1px);outline:none}
+    .btn[aria-pressed="true"]{box-shadow:0 0 0 2px var(--primary);border-color:var(--primary)}
+    .card{padding:18px;border:1px solid #e5e7e8;border-radius:14px;background:#ededeb}
+    .text-small{font-size:12px}.viz-badge{display:inline-block;padding:3px 8px;margin-right:8px;border-radius:999px;background:var(--accent);color:var(--primary);font-size:12px}
+    .tooltip{position:fixed;z-index:20;max-width:280px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:#17191b;color:#fff;font-size:12px;line-height:1.4;pointer-events:none;box-shadow:0 8px 24px #0003}
+    .site-foot{display:flex;justify-content:space-between;gap:16px;margin-top:22px;padding-top:14px;border-top:1px solid var(--border);color:var(--muted-foreground);font-size:12px}
+    .site-foot a{color:inherit;text-underline-offset:3px}
+    @media(max-width:620px){body{padding:14px}.site-foot{flex-direction:column}}
+    @media(prefers-color-scheme:dark){:root{--background:#181a1c;--foreground:#f6f7f5;--card:#292c2f;--muted-foreground:#aeb3b8;--border:#51565b;--accent:#173753}.card{background:#242729;border-color:#3a3e42}.tooltip{background:#f6f7f5;color:#181a1c}}
+  </style>
+</head>
+<body>
+<main>
+<div id="ios-attribution-map">
+  <style>
+    #ios-attribution-map{width:100%;color:var(--foreground);padding:6px 0 14px}
+    #ios-attribution-map .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:10px}
+    #ios-attribution-map h2,#ios-attribution-map h3,#ios-attribution-map p{margin-top:0}
+    #ios-attribution-map .top p{color:var(--muted-foreground);margin-bottom:0}
+    #ios-attribution-map .legend{display:flex;gap:10px;flex-wrap:wrap;color:var(--muted-foreground)}
+    #ios-attribution-map .legend span{display:flex;align-items:center;gap:5px;white-space:nowrap}
+    #ios-attribution-map .swatch{width:9px;height:9px;border-radius:50%;display:inline-block}
+    #ios-attribution-map .meta-swatch{background:var(--viz-series-1)}
+    #ios-attribution-map .apple-swatch{background:var(--viz-series-2)}
+    #ios-attribution-map .mmp-swatch{background:var(--viz-series-3)}
+    #ios-attribution-map .amp-swatch{background:var(--viz-series-4)}
+    #ios-attribution-map .customer-swatch{background:var(--viz-series-5)}
+    #ios-attribution-map .desktop-map{position:relative;width:100%;height:480px}
+    #ios-attribution-map .wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+    #ios-attribution-map .wire{fill:none;stroke:var(--border);stroke-width:2;marker-end:url(#iam-arrow)}
+    #ios-attribution-map .phone{position:absolute;left:12%;top:70px;width:54%;height:260px;border:2px solid var(--border);border-radius:28px;background:color-mix(in srgb,var(--viz-series-2) 5%,transparent)}
+    #ios-attribution-map .phone-label{position:absolute;left:18px;top:12px;color:var(--muted-foreground)}
+    #ios-attribution-map .phone-screen{position:absolute;left:18px;right:18px;top:46px;bottom:18px;display:grid;grid-template-columns:1fr .82fr 1.2fr;gap:12px;align-items:stretch}
+    #ios-attribution-map .app-box{position:relative;padding:10px;border-radius:18px;display:flex;flex-direction:column;gap:8px}
+    #ios-attribution-map .instagram-box{background:color-mix(in srgb,var(--viz-series-1) 13%,var(--card));border:1px solid color-mix(in srgb,var(--viz-series-1) 45%,var(--border))}
+    #ios-attribution-map .store-box{background:color-mix(in srgb,var(--viz-series-2) 13%,var(--card));border:1px solid color-mix(in srgb,var(--viz-series-2) 45%,var(--border))}
+    #ios-attribution-map .cosmere-box{background:color-mix(in srgb,var(--viz-series-5) 13%,var(--card));border:1px solid color-mix(in srgb,var(--viz-series-5) 45%,var(--border))}
+    #ios-attribution-map .app-title{display:flex;align-items:center;gap:6px;color:var(--foreground)}
+    #ios-attribution-map .entity{width:100%;white-space:normal;text-align:left}
+    #ios-attribution-map .ad-entity{background:color-mix(in srgb,var(--viz-series-1) 20%,var(--card));color:var(--foreground)}
+    #ios-attribution-map .apple-entity{background:color-mix(in srgb,var(--viz-series-2) 20%,var(--card));color:var(--foreground)}
+    #ios-attribution-map .mmp-entity{background:color-mix(in srgb,var(--viz-series-3) 20%,var(--card));color:var(--foreground)}
+    #ios-attribution-map .amp-entity{background:color-mix(in srgb,var(--viz-series-4) 20%,var(--card));color:var(--foreground)}
+    #ios-attribution-map .person{position:absolute;left:0;top:160px;width:10%}
+    #ios-attribution-map .cloud{position:absolute;right:0;width:29%;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;top:78px}
+    #ios-attribution-map .cloud-owner{padding:8px;border-radius:16px;min-height:240px;display:flex;flex-direction:column;gap:8px}
+    #ios-attribution-map .meta-cloud{background:color-mix(in srgb,var(--viz-series-1) 10%,transparent);border:1px solid color-mix(in srgb,var(--viz-series-1) 40%,var(--border))}
+    #ios-attribution-map .mmp-cloud{background:color-mix(in srgb,var(--viz-series-3) 10%,transparent);border:1px solid color-mix(in srgb,var(--viz-series-3) 40%,var(--border))}
+    #ios-attribution-map .amp-cloud{background:color-mix(in srgb,var(--viz-series-4) 10%,transparent);border:1px solid color-mix(in srgb,var(--viz-series-4) 40%,var(--border))}
+    #ios-attribution-map .owner-label{text-align:center;color:var(--muted-foreground);margin-bottom:2px}
+    #ios-attribution-map .edge-note{position:absolute;color:var(--muted-foreground);background:var(--background);padding:2px 5px;border-radius:6px;pointer-events:auto}
+    #ios-attribution-map .edge-user{left:9.5%;top:188px}
+    #ios-attribution-map .edge-ad-store{left:28.8%;top:202px}
+    #ios-attribution-map .edge-store-app{left:42.3%;top:202px}
+    #ios-attribution-map .edge-meta{left:46%;top:36px}
+    #ios-attribution-map .edge-mmp{left:64%;top:168px}
+    #ios-attribution-map .edge-amp{left:64%;top:278px}
+    #ios-attribution-map .message{position:absolute;left:82%;top:338px;width:16%;display:flex;align-items:center;gap:6px;color:var(--muted-foreground)}
+    #ios-attribution-map .message-line{height:2px;flex:1;background:var(--border)}
+    #ios-attribution-map .compact-map{display:none}
+    #ios-attribution-map .detail{margin-top:8px}
+    #ios-attribution-map .detail p{color:var(--muted-foreground);margin-bottom:8px}
+    #ios-attribution-map .detail .example{color:var(--foreground);margin-bottom:0}
+    #ios-attribution-map .credential-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+    #ios-attribution-map .credential-grid .btn{white-space:normal;text-align:left;min-height:68px}
+    #ios-attribution-map .credential-grid strong,#ios-attribution-map .credential-grid span{display:block}
+    #ios-attribution-map .credential-grid span{color:var(--muted-foreground);margin-top:3px}
+    @media(min-width:621px) and (max-width:850px){#ios-attribution-map .desktop-map{width:138.889%;height:350px;transform:scale(.72);transform-origin:top left}#ios-attribution-map .detail{margin-top:0}}
+    @media(max-width:620px){#ios-attribution-map .desktop-map{display:none}#ios-attribution-map .compact-map{display:block}#ios-attribution-map .compact-map .phone{position:relative;left:auto;top:auto;width:100%;height:auto;padding:16px;margin:10px 0}#ios-attribution-map .compact-map .phone-label{position:static;margin-bottom:10px}#ios-attribution-map .compact-map .phone-screen{position:static;display:grid;grid-template-columns:1fr;gap:8px}#ios-attribution-map .compact-cloud{display:grid;grid-template-columns:1fr;gap:8px}#ios-attribution-map .cloud-owner{min-height:auto}#ios-attribution-map .credential-grid{grid-template-columns:1fr}#ios-attribution-map .top{display:block}#ios-attribution-map .legend{margin-top:8px}}
+  </style>
+
+  <div class="top"><div><h2>iOS mobile attribution: where each component lives</h2><p>Click an entity for details. Hover a connection label to see what travels across it.</p></div><div class="legend text-small" aria-label="Colors identify the owning system"><span><i class="swatch meta-swatch"></i>Meta</span><span><i class="swatch apple-swatch"></i>Apple</span><span><i class="swatch mmp-swatch"></i>MMP</span><span><i class="swatch amp-swatch"></i>Amplitude</span><span><i class="swatch customer-swatch"></i>Customer app</span></div></div>
+
+  <div class="desktop-map" role="group" aria-label="iOS attribution entity relationships">
+    <svg class="wires" viewBox="0 0 1000 480" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="iam-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="var(--border)"></path></marker></defs><path class="wire" d="M96,190 L120,190"></path><path class="wire" d="M289,214 L301,214"></path><path class="wire" d="M425,214 L437,214"></path><path class="wire" d="M213,165 C400,28 660,25 752,96"></path><path class="wire" d="M620,176 C700,150 760,145 835,145"></path><path class="wire" d="M620,270 C730,310 845,250 930,150"></path><path class="wire" d="M790,250 L835,250"></path><path class="wire" d="M882,250 L925,250"></path></svg>
+    <button type="button" class="btn entity person" data-id="user" data-tooltip="Alex is the real person who sees the ad, installs the app, and opens it. Attribution systems usually do not know the person's name.">👤 End user<br><span class="text-small">Alex</span></button>
+    <section class="phone" aria-label="Alex's iPhone"><div class="phone-label">📱 Alex's iPhone (hardware container)</div><div class="phone-screen">
+      <div class="app-box instagram-box"><div class="app-title">📣 Instagram app</div><button type="button" class="btn entity ad-entity" data-id="ad" data-tooltip="The Cosmere ad appears inside Instagram and belongs to Meta's system.">Cosmere ad<br><span class="text-small">campaign 456</span></button></div>
+      <div class="app-box store-box"><div class="app-title"> App Store</div><button type="button" class="btn entity apple-entity" data-id="store" data-tooltip="The App Store shows the Cosmere download page and installs the standard version of the app.">Cosmere download page<br><span class="text-small">Not a campaign-specific build</span></button></div>
+      <div class="app-box cosmere-box"><div class="app-title">📦 Cosmere app</div><button type="button" class="btn entity mmp-entity" data-id="mmp-sdk" data-tooltip="The MMP SDK is embedded inside Cosmere. It shares a color with the MMP backend because both belong to the same MMP system.">🧩 MMP SDK</button><button type="button" class="btn entity amp-entity" data-id="amp-sdk" data-tooltip="The Amplitude SDK is also embedded inside Cosmere and sends App Open, Signup, Purchase, and other product events.">〽️ Amplitude SDK</button></div>
+    </div></section>
+    <section class="cloud" aria-label="Cloud systems"><div class="cloud-owner meta-cloud"><div class="owner-label">Meta cloud</div><button type="button" class="btn entity ad-entity" data-id="meta">Ad platform backend</button></div><div class="cloud-owner mmp-cloud"><div class="owner-label">MMP provider</div><button type="button" class="btn entity mmp-entity" data-id="mmp-backend">MMP backend</button><button type="button" class="btn entity mmp-entity" data-id="matcher">Attribution matching<br><span class="text-small">An internal backend capability</span></button></div><div class="cloud-owner amp-cloud"><div class="owner-label">Amplitude</div><button type="button" class="btn entity amp-entity" data-id="amp-backend">Amplitude backend</button></div></section>
+    <span class="edge-note edge-user text-small" data-tooltip="Alex uses Instagram, the App Store, and Cosmere on the same iPhone.">uses phone →</span><span class="edge-note edge-ad-store text-small" data-tooltip="The ad takes Alex to Cosmere's App Store page. Meta records the ad interaction.">tap ad →</span><span class="edge-note edge-store-app text-small" data-tooltip="The App Store installs the standard Cosmere app. It does not write campaign 456 into the app binary.">install →</span><span class="edge-note edge-meta text-small" data-tooltip="Instagram and Meta's backend are part of the same system. Meta records the ad interaction and can share permitted attribution information with the MMP.">records ad interaction</span><span class="edge-note edge-mmp text-small" data-tooltip="On first open, the MMP SDK sends legally available iOS attribution signals to its own backend.">first-open signals</span><span class="edge-note edge-amp text-small" data-tooltip="The Amplitude SDK sends App Open, Signup, Purchase, and other product events to Amplitude.">product events</span>
+    <div class="message" data-tooltip="The attribution result is not a separate entity. It is a message sent from the MMP backend to Amplitude."><span>attribution message</span><i class="message-line"></i><span>→</span></div>
+  </div>
+
+  <div class="compact-map" aria-label="Compact iOS attribution relationships"><button type="button" class="btn entity" data-id="user">👤 End user: Alex</button><section class="phone"><div class="phone-label">📱 Alex's iPhone</div><div class="phone-screen"><div class="app-box instagram-box"><div class="app-title">📣 Instagram app</div><button type="button" class="btn entity ad-entity" data-id="ad">Cosmere ad · campaign 456</button></div><div class="app-box store-box"><div class="app-title"> App Store</div><button type="button" class="btn entity apple-entity" data-id="store">Cosmere download page</button></div><div class="app-box cosmere-box"><div class="app-title">📦 Cosmere app</div><button type="button" class="btn entity mmp-entity" data-id="mmp-sdk">🧩 MMP SDK</button><button type="button" class="btn entity amp-entity" data-id="amp-sdk">〽️ Amplitude SDK</button></div></div></section><div class="compact-cloud"><div class="cloud-owner meta-cloud"><div class="owner-label">Meta cloud</div><button type="button" class="btn entity ad-entity" data-id="meta">Ad platform backend</button></div><div class="cloud-owner mmp-cloud"><div class="owner-label">MMP provider</div><button type="button" class="btn entity mmp-entity" data-id="mmp-backend">MMP backend</button><button type="button" class="btn entity mmp-entity" data-id="matcher">Attribution matching</button></div><div class="cloud-owner amp-cloud"><div class="owner-label">Amplitude</div><button type="button" class="btn entity amp-entity" data-id="amp-backend">Amplitude backend</button></div></div></div>
+
+  <section class="card detail" id="iam-detail" aria-live="polite"></section>
+  <script>
+    (()=>{const root=document.getElementById('ios-attribution-map'),detail=root.querySelector('#iam-detail');const info={user:['👤 End user: Alex','Alex is the real person. The attribution system usually does not know that this person is Alex; it only tries to determine whether an ad interaction and an app install are related under the available permissions.','Alex sees a Cosmere ad in Instagram.'],ad:['📣 Cosmere ad · campaign 456','The ad lives inside the Instagram app. After Alex taps it, Meta records the app, campaign, time, and whatever attribution information is permitted at that moment.','The App Store link does not remember Alex; Meta first records the ad interaction.'],store:[' App Store','The App Store displays the Cosmere download page and installs the standard app. Android Install Referrer logic does not apply to this iOS-only view.','Everyone receives essentially the same Cosmere app; campaign 456 is not written into the app binary.'],'mmp-sdk':['🧩 MMP SDK (inside Cosmere)','This is code embedded in the customer app. On first open, it reports the install or launch to the MMP backend and uses the iOS attribution signals permitted by the current privacy settings.','It shares a color with the MMP backend because both belong to an MMP such as AppsFlyer, Adjust, or Branch.',true],'amp-sdk':['〽️ Amplitude SDK (inside Cosmere)','This is separate from the MMP SDK. It sends App Open, Signup, Purchase, and other product events, along with any permitted device or user identifiers.','The MMP SDK explains where the install came from; the Amplitude SDK explains what happened afterward.'],meta:['Meta ad platform backend','Meta stores the Instagram ad interaction. As a self-reporting network, Meta can use its MMP integration to confirm whether an install belongs to campaign 456 and how much detail may be disclosed.','Meta may recognize its own ad interaction, but that does not mean the MMP receives Alex\'s full identity.'],'mmp-backend':['MMP backend','This is the cloud service operated by AppsFlyer or another MMP. It receives first-open information, ad-platform attribution information, and Apple privacy-preserving postbacks, then applies its attribution rules.','The attribution conclusion lives inside this backend; there is no separate “attribution result” entity.',true],matcher:['Attribution matching (inside the MMP backend)','This is an internal backend capability, not a separate company or device. It prioritizes deterministic signals when legally available; otherwise it relies on platform-level or aggregate attribution.','Its output is data: Cosmere install ← Meta campaign 456.',true],'amp-backend':['Amplitude backend','Amplitude receives two streams: the campaign attribution message from the MMP and product events from the Amplitude SDK.','Amplitude connects acquisition context with App Open, Signup, Purchase, retention, and other analyses.']};const credentials=[['IDFA + ATT consent','Device-level matching may be possible','When the user permits cross-app tracking, the ad side and app side may be able to use the same IDFA.'],['Meta platform confirmation','Meta answers the attribution query','The MMP asks Meta whether the install belongs to campaign 456 and receives the fields Meta is allowed to disclose.'],['AdAttributionKit / SKAdNetwork','Apple privacy-preserving postback','Apple can confirm that a campaign generated an install without revealing a specific person or device.'],['Deferred deep-link data','Open specific content after install','Some supported paths can open a destination on first launch, but this does not equal a user identity.'],['IDFV','Identifier within one vendor’s app family','Its scope is narrower than IDFA and it cannot be freely used for cross-company tracking.'],['No user-level signal','Aggregate attribution or Organic','Without a reliable permitted signal, the MMP cannot pretend it knows which person installed the app.']];function show(id){const d=info[id];if(!d)return;root.querySelectorAll('.entity').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.id===id)));const extra=d[3]?`<div class="credential-grid">${credentials.map(c=>`<button type="button" class="btn" data-tooltip="${c[2]}"><strong>${c[0]}</strong><span>${c[1]}</span></button>`).join('')}</div>`:'';detail.innerHTML=`<h3>${d[0]}</h3><p>${d[1]}</p><p class="example"><span class="viz-badge">In plain English</span> ${d[2]}</p>${extra}`;}root.querySelectorAll('.entity').forEach(b=>b.addEventListener('click',()=>show(b.dataset.id)));show('mmp-sdk');})();
+  </script>
+</div>
+<footer class="site-foot"><span>Built by Xinyi Ye as a systems-thinking aid.</span><a href="https://mercy811.github.io/">Back to the workbench ↗</a></footer>
+</main>
+<script>
+  (() => {
+    const tip = document.createElement('div');
+    tip.className = 'tooltip';
+    tip.hidden = true;
+    document.body.append(tip);
+    const show = (event) => {
+      const target = event.target.closest('[data-tooltip]');
+      if (!target) return;
+      tip.textContent = target.dataset.tooltip;
+      tip.hidden = false;
+      const rect = target.getBoundingClientRect();
+      const left = Math.min(window.innerWidth - 292, Math.max(8, rect.left));
+      const top = Math.min(window.innerHeight - tip.offsetHeight - 8, rect.bottom + 8);
+      tip.style.left = `${left}px`; tip.style.top = `${top}px`;
+    };
+    const hide = () => { tip.hidden = true; };
+    document.addEventListener('mouseover', show);
+    document.addEventListener('focusin', show);
+    document.addEventListener('mouseout', hide);
+    document.addEventListener('focusout', hide);
+  })();
+</script>
+</body>
+</html>
